@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Object Detection with TensorFlow.js</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: space-between;
+            margin: 0;
+            padding: 0;
+        }
+        #video-container {
+            position: relative;
+        }
+        video {
+            width: 640px;
+            height: 480px;
+            border: 2px solid black;
+        }
+        #object-list {
+            width: 200px;
+            padding: 20px;
+            background-color: #f1f1f1;
+            margin-left: 20px;
+            overflow-y: auto;
+        }
+        .object-item {
+            margin-bottom: 10px;
+            padding: 8px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="video-container">
+    <video id="webcam" autoplay></video>
+</div>
+
+<div id="object-list">
+    <h3>Identified Objects</h3>
+    <div id="object-container">
+        <!-- Object list will be displayed here -->
+    </div>
+</div>
+
+<script>
+    let video;
+    let model;
+    let detectedObjects = [];
+
+    async function setupWebcam() {
+        video = document.getElementById("webcam");
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+        });
+        video.srcObject = stream;
+    }
+
+    async function setupModel() {
+        // Load the COCO-SSD model
+        model = await cocoSsd.load();
+        detectObjects();
+    }
+
+    async function detectObjects() {
+        model.detect(video).then((predictions) => {
+            detectedObjects = predictions;
+            updateObjectList();
+            requestAnimationFrame(detectObjects); // Keep detecting
+        });
+    }
+
+    function updateObjectList() {
+        const objectContainer = document.getElementById("object-container");
+        objectContainer.innerHTML = ""; // Clear previous list
+
+        detectedObjects.forEach((prediction) => {
+            const objectItem = document.createElement("div");
+            objectItem.classList.add("object-item");
+            objectItem.innerHTML = `
+                <strong>${prediction.class}</strong><br>
+                Confidence: ${(prediction.score * 100).toFixed(2)}%
+            `;
+            objectContainer.appendChild(objectItem);
+        });
+    }
+
+    // Initialize everything
+    async function initialize() {
+        await setupWebcam();
+        await setupModel();
+    }
+
+    initialize();
+</script>
+
+</body>
+</html>
